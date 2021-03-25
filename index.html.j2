@@ -1,0 +1,67 @@
+{%- extends 'classic/index.html.j2' -%}
+
+{%- block html_head_css -%}
+  {{ super() }}
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Lato&family=Lora&display=swap');   
+  
+    h1 {
+        font-family: "Lato", sans-serif;
+        font-size: 32px !important;
+        color: #377DF7;
+    }
+    h2, h3, h4, p {
+        font-family: "Lato", sans-serif
+    }
+    .header, .footer {
+      overflow: hidden;
+      background-color: #f5f5f5;
+      padding: 10px 10px;
+    }
+    div.logo {
+      float: right;
+    }
+
+    .logo .tiro {
+      font-family: 'Lora';
+      font-size: 24px;
+      color: #377DF7;
+    }
+    .logo .health {
+      background-color: #55BA3C;
+      font-family: 'Lato';
+      font-weight: 100;
+      font-size: 10px;
+      color: #F1F1F1;
+      border-radius: 2px;
+      padding: 0 5px;
+    }
+    .body{
+      width: 50%;
+      min-width: 800px;
+      margin: 0 auto;
+    }
+  </style>
+{%- endblock html_head_css -%}
+
+{% block body_header %}
+  <body class="jp-Notebook theme-light" style="padding: 0; margin: 0;">
+  <div class="footer">
+    <div class="logo">
+        <span class="tiro">Tiro</span>
+        <span class="health">health</span>
+    </div>
+  </div>
+  <div class="body" style="padding: 10px;">
+{% endblock body_header %}
+
+{% block body_footer %}
+  </div>
+  <div class="footer">
+    <div class="logo">
+        <span class="tiro">Tiro</span>
+        <span class="health">health</span>
+    </div>
+  </div>
+  </body>
+{% endblock body_footer %}
