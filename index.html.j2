@@ -1,8 +1,31 @@
-{%- extends 'classic/index.html.j2' -%}
+{%- extends 'nbconvert/templates/lab/index.html.j2' -%}
+{% import "spinner.macro.html.j2" as spinner %}
+{% import "log.macro.html.j2" as log %}
+{% from 'voila_setup.macro.html.j2' import voila_setup with context %}
+
+{%- block html_head_js -%}
+  {%- block html_head_js_requirejs -%}
+  <script
+    src="{{resources.base_url}}voila/static/require.min.js"
+    integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA="
+    crossorigin="anonymous">
+  </script>
+  {%- endblock html_head_js_requirejs -%}
+{%- block html_head_js_logs -%}
+{{ log.js() }}
+{%- endblock html_head_js_logs -%}
+{%- endblock html_head_js -%}
 
 {%- block html_head_css -%}
-  {{ super() }}
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/font-awesome@4.5.0/css/font-awesome.min.css" type="text/css" />
+{{ super() }}
+{{ spinner.css() }}
   <style>
+    /*Hide empty cells*/
+    .jp-mod-noOutputs.jp-mod-noInput {
+      display: none;
+    }
+
     @import url('https://fonts.googleapis.com/css2?family=Lato&family=Lora&display=swap');   
   
     h1 {
@@ -13,12 +36,30 @@
     h2, h3, h4, p {
         font-family: "Lato", sans-serif
     }
+    body {
+      position: relative;
+      padding: 0 !important;
+      margin: 0 !important;
+      min-height: 100vh;
+    }
     .header, .footer {
-      overflow: hidden;
+      position: absolute;
+      width: 100%
+    }
+    .header>div, .footer>div{
+      position: relative;
       background-color: #f5f5f5;
-      padding: 10px 10px;
+      padding: 10px 15px;
+      height: 2rem
+    }
+    .header {
+      top: 0 !important;
+    }
+    .footer {
+      bottom: 0 !important;
     }
     div.logo {
+      position: relative;
       float: right;
     }
 
@@ -40,32 +81,108 @@
       width: 50%;
       min-width: 900px;
       margin: 0 auto;
+      padding: 3rem 0;
     }
 
-    div.output_html {
-      margin: 0 auto;
+    .voila-spinner-color1{
+      fill: #FFFFFF !important;
     }
+
+    .voila-spinner-color2{
+      fill: #C9E4FF !important;
+    }
+
   </style>
 {%- endblock html_head_css -%}
 
-{% block body_header %}
-  <body class="jp-Notebook theme-light" style="padding: 0; margin: 0;">
-  <div class="footer">
-    <div class="logo">
-        <span class="tiro">Tiro</span>
-        <span class="health">health</span>
-    </div>
-  </div>
-  <div class="body" style="padding: 10px;">
-{% endblock body_header %}
+{# this overrides the default behaviour of rendering static widgets #}
+{% block jupyter_widgets %}
+{% endblock jupyter_widgets %}
 
-{% block body_footer %}
-  </div>
-  <div class="footer">
+{% block body_header %}
+{% if resources.theme == 'dark' %}
+<body class="jp-Notebook theme-dark" data-base-url="{{resources.base_url}}voila/">
+{% else %}
+<body class="jp-Notebook theme-light" data-base-url="{{resources.base_url}}voila/">
+{% endif %}
+<div class="header">
+  <div>
     <div class="logo">
         <span class="tiro">Tiro</span>
         <span class="health">health</span>
     </div>
   </div>
-  </body>
-{% endblock body_footer %}
+</div>
+{{ spinner.html() }}
+<script>
+var voila_test = "123"
+var voila_process = function(cell_index, cell_count) {
+  var el = document.getElementById("loading_text")
+  el.innerHTML = `Loading and analysing data... (part ${cell_index}/${cell_count})`
+}
+var voila_heartbeat = function() {
+  console.log('Ok, voila is still executing...')
+}
+</script>
+<div id="rendered_cells" style="display: none">
+  <div class="body">
+{%- endblock body_header -%}
+
+{%- block body_loop -%}
+  {# from this point on, the kernel is started #}
+  {%- with kernel_id = kernel_start(nb) -%}
+    <script id="jupyter-config-data" type="application/json">
+    {
+        "baseUrl": "{{resources.base_url}}",
+        "kernelId": "{{kernel_id}}"
+    }
+    </script>
+    {% set cell_count = nb.cells|length %}
+    {#
+    Voilà is using Jinja's Template.generate method to not render the whole template in one go.
+    The current implementation of Jinja will however not yield template snippets if we call a blocks' super()
+    Therefore it is important to have the cell loop in the template.
+    The issue for Jinja is: https://github.com/pallets/jinja/issues/1044
+    #}
+    {%- for cell in cell_generator(nb, kernel_id) -%}
+      {% set cellloop = loop %}
+      {%- block any_cell scoped -%}
+      <script>
+        voila_process({{ cellloop.index }}, {{ cell_count }})
+      </script>
+        {{ super() }}
+      {%- endblock any_cell -%}
+    {%- endfor -%}
+  {% endwith %}
+{%- endblock body_loop -%}
+
+{%- block body_footer -%}
+    </div>
+  </div>
+  <div class="footer">
+    <div>
+      <div class="logo">
+          <span class="tiro">Tiro</span>
+          <span class="health">health</span>
+      </div>
+    </div>
+  </div>
+<script type="text/javascript">
+  (function() {
+    // remove the loading element
+    var el = document.getElementById("loading")
+    el.parentNode.removeChild(el)
+    // show the cell output
+    el = document.getElementById("rendered_cells")
+    el.style.display = 'unset'
+  })();
+</script>
+{{ voila_setup(resources.base_url, resources.nbextensions) }}
+{{ super() }}
+{%- endblock body_footer -%}
+
+{%- block footer %}
+{% block footer_js %}
+{% endblock footer_js %}
+</html>
+{%- endblock footer-%}
