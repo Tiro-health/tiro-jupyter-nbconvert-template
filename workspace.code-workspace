@@ -1,0 +1,14 @@
+{
+	"folders": [
+		{
+			"path": "."
+		},
+		{
+			"path": "../lab"
+		},
+		{
+			"path": "../base"
+		}
+	],
+	"settings": {}
+}
